@@ -58,19 +58,16 @@
       var reader = new FileReader();
       reader.onload = function(event){
         var fd = new FormData();
-        console.log("mp3name = " + mp3Name);
         fd.append('fname', mp3Name);
         fd.append('data', event.target.result);
-        $.ajax({
-          type: 'POST',
-          url: 'upload.php',
-          data: fd,
-          processData: false,
-          contentType: false
-        }).done(function(data) {
-          //console.log(data);
-          log.innerHTML += "\n" + data;
-        });
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'upload.php', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                __log("MP3 Uploaded.");
+            }
+        };
+        xhr.send(fd);
       };
       reader.readAsDataURL(mp3Data);
     }
