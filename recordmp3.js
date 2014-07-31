@@ -3,21 +3,22 @@
   var WORKER_PATH = 'js/recorderWorker.js';
 
   var Recorder = function(stream){
-    var context, audioInput, recorder, volume;
+    var context, audioInput, processor, gain, gainFunction, processorFunction;
     var recording = false, currCallback;
 
     // http://typedarray.org/from-microphone-to-wav-with-getusermedia-and-web-audio/
     context = new AudioContext;
-    volume = context.createGain();
+    gainFunction = context.createGain || context.createGainNode;
+    gain = gainFunction.call(context);
     audioInput = context.createMediaStreamSource(stream);
     __log('Media stream created.' );
     __log("input sample rate " +context.sampleRate);
 
-    audioInput.connect(volume);
+    audioInput.connect(gain);
     __log('Input connected to audio context destination.');
 
-    recorder = (context.createScriptProcessor ||
-                 context.createJavaScriptNode).call(context, 4096, 2, 2);
+    processorFunction = context.createScriptProcessor || context.createJavaScriptNode;
+    processor = processorFunction.call(context, 4096, 2, 2);
 
     var worker = new Worker(WORKER_PATH);
     worker.postMessage({
@@ -25,7 +26,7 @@
       sampleRate: context.sampleRate
     });
 
-    recorder.onaudioprocess = function(e){
+    processor.onaudioprocess = function(e){
       if (!recording) return;
       worker.postMessage({
         command: 'record',
@@ -72,8 +73,8 @@
       reader.readAsDataURL(mp3Data);
     }
 
-    volume.connect(recorder);
-    recorder.connect(context.destination);
+    gain.connect(processor);
+    processor.connect(context.destination);
   };
 
   window.Recorder = Recorder;
